@@ -1,4 +1,6 @@
-# cleanbot
+!(https://cdn.discordapp.com/app-icons/1310261454959673354/79876aac97de54fdfc9a06fbca4f32ff.png)
+
+# Cleanbot
 Bot Discord pour purger les canaux d'un serveur
 
 

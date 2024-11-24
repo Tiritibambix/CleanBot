@@ -4,58 +4,69 @@
 Bot Discord pour purger les canaux d'un serveur
 
 
-# Guide pour créer un bot Discord qui efface des messages tous les 7 jours
+Créer un bot Discord pour supprimer les messages de différents canaux est faisable avec Python et la bibliothèque `discord.py`. Voici un guide simple pour le mettre en place sous Debian.
 
-Ce guide vous montre comment créer un bot Discord en utilisant `discord.py` qui effacera des messages dans des canaux spécifiés tous les 7 jours. Nous allons également aborder les permissions nécessaires et les étapes pour configurer et tester le bot.
+---
 
-## Prérequis
+### Étapes pour créer et exécuter le bot
 
-Avant de commencer, assurez-vous que :
+#### 1. **Créer une application Discord**
 
-- Vous avez un bot Discord configuré et fonctionnel.
-- Vous avez installé `discord.py` sur votre machine.
-- Votre bot a la permission **Gérer les messages** dans les canaux où il doit supprimer les messages.
+1. Rendez-vous sur le portail des développeurs Discord.
+2. Cliquez sur **New Application**, donnez-lui un nom, et cliquez sur **Create**.
+3. Allez dans l’onglet **Bot** et cliquez sur **Add Bot**. Confirmez.
+4. Sous **Token**, cliquez sur **Copy** pour sauvegarder le token du bot (gardez-le privé).
 
-### 1. Installer `discord.py`
+#### 2. **Activer les intentions nécessaires dans le portail Discord :**
 
-Si vous n'avez pas encore installé `discord.py`, utilisez la commande suivante :
+1. Allez sur le portail des développeurs Discord.
+2. Sélectionnez votre application (le bot).
+3. Dans le menu de gauche, cliquez sur **Bot**.
+4. Sous **Privileged Gateway Intents**, activez l'option **Message Content Intent**.
+5. Cliquez sur **Save Changes**.
+
+#### 3. **Inviter le bot sur votre serveur**
+
+1. Sous l’onglet **OAuth2** &gt; **URL Generator**, cochez : 
+    - `bot` dans **Scopes**.
+    - Les permissions nécessaires dans **Bot Permissions** (par exemple, `Send Messages`).
+2. Copiez l’URL générée et ouvrez-la dans votre navigateur.
+3. Invitez le bot sur votre serveur Discord en suivant les instructions.
+
+#### 4. **Obtenir les IDs des canaux**
+
+Activez le **Mode Développeur** dans Discord (Paramètres &gt; Avancés &gt; Mode Développeur). Faites un clic droit sur le canal concerné et sélectionnez **Copier l’identifiant**.
+
+#### 5. **Installer les dépendances**
+
+Sur votre Debian, installez Python et les bibliothèques nécessaires :
 
 ```bash
-pip install discord.py
+sudo apt update
+sudo apt install python3 python3-pip -y
+pip3 install discord.py
 ```
 
-Si vous utilisez un environnement virtuel, assurez-vous d'être activé dans ce dernier avant d'installer `discord.py`.
+#### 6. **Écrire le script Python**
 
-### 2. Créer un bot Discord
-
-Si vous n'avez pas encore créé de bot, suivez ces étapes :
-
-1. Allez sur [Discord Developer Portal](https://discord.com/developers/applications).
-2. Créez une nouvelle application, puis générez un bot dans la section "Bot".
-3. Copiez le **Token** de votre bot, qui sera utilisé dans le script.
-4. Donnez les permissions nécessaires au bot, telles que "Gérer les messages".
-
-### 3. Script Python pour le bot
-
-Voici le script complet pour que votre bot efface des messages tous les 7 jours dans les canaux que vous spécifiez.
-
-#### Script Python
+Créez un fichier `bot.py` avec le contenu suivant :
 
 ```python
 import discord
 from discord.ext import commands
 import asyncio
 
-# Remplacez par votre token
+# Remplacez par votre propre token
 TOKEN = "VOTRE_TOKEN_ICI"
-# Liste des ID de canaux où envoyer le message
-CHANNEL_IDS = [123456789012345678, 987654321098765432]  # Remplacez avec les IDs de vos canaux
+# Remplacez par les IDs des canaux ou vous souhaitez effacer des messages
+CHANNEL_IDS = [123456789012345678, 987654321098765432]  # Exemple d'IDs de canaux
 # Nombre maximum de messages a supprimer par execution
-AMOUNT_TO_CLEAR = 999
+AMOUNT_TO_CLEAR = 100
 
 # Initialisation du bot avec les intentions necessaires
 intents = discord.Intents.default()
 intents.messages = True  # Permet au bot d'interagir avec les messages
+intents.message_content = True  # Necessaire pour acceder au contenu des messages
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
@@ -83,45 +94,42 @@ async def on_ready():
 bot.run(TOKEN)
 ```
 
-### Explications du script
+#### 7. Lancer le bot en arrière-plan avec `nohup`
 
-1. **Initialisation du bot** :
-    - Le bot utilise le préfixe `!` pour les commandes et s'assure que les intentions nécessaires (comme la gestion des messages) sont activées.
+Pour faire tourner le bot en arrière-plan, vous pouvez utiliser `nohup` pour qu'il continue à fonctionner même si vous fermez le terminal. Voici la commande à exécuter pour démarrer le bot et enregistrer les logs dans un fichier :
 
-2. **Liste des canaux** :
-    - Les IDs des canaux où le bot effacera les messages sont stockés dans la liste `CHANNEL_IDS`.
+```bash
+nohup python3 /path/to/bot.py > /path/to/bot_output.log 2>&1 &
+```
 
-3. **La tâche récurrente** :
-    - La fonction `clear_messages` est décorée avec `@tasks.loop(hours=168)`, ce qui signifie que cette tâche se déclenchera toutes les 168 heures (soit 7 jours).
-    - Le bot purge jusqu'à `AMOUNT_TO_CLEAR` messages dans chaque canal spécifié.
+Cette commande exécute le script en arrière-plan et redirige les sorties (logs et erreurs) vers le fichier `bot_output.log`.
 
-4. **Gestion des erreurs** :
-    - Le bot gère les erreurs, telles que les problèmes d'accès ou les erreurs HTTP lors de la tentative de suppression des messages.
+#### 8. Configurer une tâche cron pour redémarrer le bot chaque lundi à 5:00AM
 
-5. **Lancer le bot** :
-    - Une fois le bot lancé avec `bot.run(TOKEN)`, il commencera à exécuter la tâche récurrente pour effacer les messages dans les canaux spécifiés.
+Pour redémarrer automatiquement le bot chaque lundi à 5:00AM, vous devez configurer une tâche cron. Pour cela, éditez votre crontab :
 
-### 4. Vérifier et donner des permissions
+```bash
+crontab -e
+```
 
-Le bot doit avoir la permission **Gérer les messages** dans les canaux où il doit supprimer les messages. Voici comment vérifier cela :
+Ajoutez la ligne suivante pour exécuter le bot chaque lundi à 5:00AM :
 
-1. Allez dans **Paramètres du serveur** > **Rôles**.
-2. Sélectionnez le rôle du bot, puis activez **Gérer les messages**.
-3. Assurez-vous également que cette permission est activée dans chaque canal.
+```bash
+0 5 * * 1 nohup python3 /path/to/bot.py > path/to/bot_output.log 2>&1 &
+```
 
-### 5. Lancer le script
+`nohup` est optionnel puisqu'on n'execute pas le script depuis le terminal.
 
-Une fois que vous avez configuré le bot et le script :
+Cela fera en sorte que votre bot soit exécuté automatiquement chaque lundi à 5:00AM.
 
-1. Sauvegardez le fichier avec l'extension `.py`, par exemple `bot.py`.
-2. Exécutez-le avec la commande suivante :
-   ```bash
-   nohup python3 /home/scripts/discord/bot.py &
-   ```
-3. Le bot commencera à exécuter la tâche récurrente pour effacer les messages tous les 7 jours.
+## Conclusion
 
-### Conclusion
-
-Avec ce script, votre bot effacera automatiquement des messages dans les canaux que vous avez spécifiés tous les 7 jours. Si vous avez des questions ou avez besoin d'ajustements, n'hésitez pas à me contacter !
+Avec ce guide, vous avez un bot Discord qui purge les messages tous les 7 jours dans les canaux de votre choix. Vous pouvez adapter le script et les paramètres selon vos besoins, et utiliser `cron` pour planifier l'exécution automatique du bot tous les lundis à 5:00AM.
 
 ---
+
+### Points importants
+
+- **Gardez votre token secret** : Ne partagez jamais votre token. Si vous pensez qu'il est compromis, régénérez-le depuis le portail Discord.
+- **Permissions du bot** : Vérifiez que le bot a bien les permissions nécessaires sur chaque canal.
+- **Testez localement** : Assurez-vous que le script fonctionne correctement avant de l’automatiser.

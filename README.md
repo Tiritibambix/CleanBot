@@ -120,10 +120,6 @@ Une fois que vous avez configuré le bot et le script :
    ```
 3. Le bot commencera à exécuter la tâche récurrente pour effacer les messages tous les 7 jours.
 
-### 6. Tester le bot
-
-Si vous voulez tester le bot rapidement, vous pouvez modifier la ligne `@tasks.loop(hours=168)` en `@tasks.loop(seconds=10)` pour effectuer la purge toutes les 10 secondes. Cela vous permettra de voir si tout fonctionne correctement sans attendre une semaine.
-
 ### Conclusion
 
 Avec ce script, votre bot effacera automatiquement des messages dans les canaux que vous avez spécifiés tous les 7 jours. Si vous avez des questions ou avez besoin d'ajustements, n'hésitez pas à me contacter !

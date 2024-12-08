@@ -1,4 +1,4 @@
-![Alt text](https://cdn.discordapp.com/app-icons/1310261454959673354/79876aac97de54fdfc9a06fbca4f32ff.png "a title")
+![Cleanbot](https://cdn.discordapp.com/app-icons/1310261454959673354/79876aac97de54fdfc9a06fbca4f32ff.png "Cleanbot")
 
 # Cleanbot
 

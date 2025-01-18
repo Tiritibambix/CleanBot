@@ -82,7 +82,7 @@ def purge_now():
         
         # Appeler l'API du bot pour déclencher une purge immédiate
         try:
-            response = requests.post(BOT_API_URL, json=config, timeout=5)
+            response = requests.post(BOT_API_URL, json=config, timeout=30)  # Augmentation du timeout à 30 secondes
             if response.status_code == 200:
                 flash('Purge démarrée avec succès', 'success')
             else:

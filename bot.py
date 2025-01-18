@@ -8,6 +8,11 @@ from datetime import datetime, timedelta
 import croniter
 from aiohttp import web
 import json
+import logging
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path("/app/config/config.yaml")
 
@@ -29,13 +34,13 @@ async def purge_channels(bot, config):
         if channel:
             try:
                 deleted = await channel.purge(limit=config['max_messages'])
-                print(f"{len(deleted)} messages supprimés dans le canal {channel_id}.")
+                logger.info(f"{len(deleted)} messages supprimés dans le canal {channel_id}.")
             except discord.errors.Forbidden:
-                print(f"Accès refusé pour supprimer les messages dans le canal {channel_id}.")
+                logger.error(f"Accès refusé pour supprimer les messages dans le canal {channel_id}.")
             except discord.errors.HTTPException as e:
-                print(f"Erreur HTTP lors de la tentative de purge dans le canal {channel_id}: {e}")
+                logger.error(f"Erreur HTTP lors de la tentative de purge dans le canal {channel_id}: {e}")
         else:
-            print(f"Canal avec ID {channel_id} introuvable.")
+            logger.error(f"Canal avec ID {channel_id} introuvable.")
 
 def get_next_run_time(config):
     now = datetime.now()
@@ -100,31 +105,45 @@ async def setup_bot(config):
     bot = commands.Bot(command_prefix="!", intents=intents)
     
     try:
+        logger.info("Tentative de connexion du bot...")
         await bot.login(config['token'])
+        logger.info("Login réussi, tentative de connexion...")
         await bot.connect()
+        logger.info("Bot connecté avec succès")
+        return bot
     except Exception as e:
-        print(f"Erreur lors de la connexion du bot : {e}")
+        logger.error(f"Erreur lors de la connexion du bot : {e}")
+        if bot:
+            try:
+                await bot.close()
+            except:
+                pass
         return None
-    
-    return bot
 
 async def handle_purge(request):
     try:
+        logger.info("Réception d'une requête de purge")
         config = await request.json()
         
         if not config.get('token') or not config.get('channel_ids'):
+            logger.error("Configuration invalide reçue")
             return web.Response(text="Configuration invalide", status=400)
         
+        logger.info("Configuration valide, tentative de connexion du bot...")
         bot = await setup_bot(config)
         if not bot:
+            logger.error("Impossible de connecter le bot")
             return web.Response(text="Erreur de connexion du bot", status=500)
         
+        logger.info("Bot connecté, début de la purge...")
         await purge_channels(bot, config)
+        logger.info("Purge terminée, fermeture du bot...")
         await bot.close()
         
         return web.Response(text="Purge effectuée avec succès")
         
     except Exception as e:
+        logger.error(f"Erreur lors de la purge : {e}")
         return web.Response(text=str(e), status=500)
 
 async def run_api():
@@ -134,29 +153,35 @@ async def run_api():
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', 8081)
     await site.start()
-    print("API démarrée sur le port 8081")
+    logger.info("API démarrée sur le port 8081")
 
 async def main():
-    # Démarrer l'API
-    asyncio.create_task(run_api())
-    
-    while True:
-        try:
-            config = load_config()
-            
-            sleep_time = get_next_run_time(config)
-            print(f"Prochaine exécution dans {sleep_time/3600:.2f} heures")
-            await asyncio.sleep(sleep_time)
-            
-            bot = await setup_bot(config)
-            if bot:
-                await purge_channels(bot, config)
-                await bot.close()
-            
-        except Exception as e:
-            print(f"Erreur : {str(e)}")
-            print("Nouvelle tentative dans 5 minutes...")
-            await asyncio.sleep(300)
+    try:
+        # Démarrer l'API
+        logger.info("Démarrage de l'API...")
+        await run_api()
+        logger.info("API démarrée, début de la boucle principale")
+        
+        while True:
+            try:
+                config = load_config()
+                
+                sleep_time = get_next_run_time(config)
+                logger.info(f"Prochaine exécution dans {sleep_time/3600:.2f} heures")
+                await asyncio.sleep(sleep_time)
+                
+                bot = await setup_bot(config)
+                if bot:
+                    await purge_channels(bot, config)
+                    await bot.close()
+                
+            except Exception as e:
+                logger.error(f"Erreur dans la boucle principale : {e}")
+                logger.info("Nouvelle tentative dans 5 minutes...")
+                await asyncio.sleep(300)
+    except Exception as e:
+        logger.error(f"Erreur fatale : {e}")
+        raise
 
 if __name__ == "__main__":
     asyncio.run(main())

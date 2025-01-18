@@ -9,6 +9,7 @@ import croniter
 from aiohttp import web
 import json
 import logging
+import ssl
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -21,62 +22,87 @@ class CleanBot:
         self.bot = None
         self.config = None
         self.last_token = None
+        self._lock = asyncio.Lock()
 
     async def ensure_bot_connected(self, token):
-        if self.bot is None or self.last_token != token:
-            if self.bot:
-                try:
-                    await self.bot.close()
-                except:
-                    pass
+        async with self._lock:  # Empêcher les connexions simultanées
+            if self.bot is None or self.last_token != token:
+                if self.bot:
+                    try:
+                        await self.bot.close()
+                    except:
+                        pass
+                    self.bot = None
+                    await asyncio.sleep(1)  # Attendre que la connexion précédente soit bien fermée
 
-            intents = discord.Intents.default()
-            intents.messages = True
-            intents.message_content = True
-            self.bot = commands.Bot(command_prefix="!", intents=intents)
-            
-            try:
-                logger.info("Tentative de connexion du bot...")
-                await self.bot.login(token)
-                logger.info("Login réussi, tentative de connexion...")
-                await self.bot.connect()
-                self.last_token = token
-                logger.info("Bot connecté avec succès")
-                return True
-            except Exception as e:
-                logger.error(f"Erreur lors de la connexion du bot : {e}")
-                self.bot = None
-                self.last_token = None
-                return False
-        return True
+                intents = discord.Intents.default()
+                intents.messages = True
+                intents.message_content = True
+                self.bot = commands.Bot(command_prefix="!", intents=intents)
+                
+                try:
+                    logger.info("Tentative de connexion du bot...")
+                    await self.bot.login(token)
+                    logger.info("Login réussi, tentative de connexion...")
+                    
+                    # Créer une session personnalisée avec une configuration SSL plus permissive
+                    connector = discord.http.HTTPClient.CONNECTOR_CLASS(
+                        ssl=ssl.create_default_context(),
+                        force_close=True,
+                        enable_cleanup_closed=True
+                    )
+                    self.bot.http.connector = connector
+                    
+                    await self.bot.connect()
+                    self.last_token = token
+                    logger.info("Bot connecté avec succès")
+                    return True
+                except Exception as e:
+                    logger.error(f"Erreur lors de la connexion du bot : {e}")
+                    if self.bot:
+                        try:
+                            await self.bot.close()
+                        except:
+                            pass
+                    self.bot = None
+                    self.last_token = None
+                    return False
+            return True
 
     async def purge_channels(self, config):
-        if not await self.ensure_bot_connected(config['token']):
-            raise Exception("Impossible de connecter le bot")
+        async with self._lock:  # S'assurer qu'une seule purge s'exécute à la fois
+            if not await self.ensure_bot_connected(config['token']):
+                raise Exception("Impossible de connecter le bot")
 
-        results = []
-        for channel_id in config['channel_ids']:
-            channel = self.bot.get_channel(channel_id)
-            if channel:
+            results = []
+            for channel_id in config['channel_ids']:
                 try:
-                    deleted = await channel.purge(limit=config['max_messages'])
-                    msg = f"{len(deleted)} messages supprimés dans le canal {channel_id}"
-                    logger.info(msg)
-                    results.append({"channel": channel_id, "status": "success", "deleted": len(deleted)})
-                except discord.errors.Forbidden:
-                    msg = f"Accès refusé pour le canal {channel_id}"
+                    channel_id = int(channel_id)  # S'assurer que l'ID est un entier
+                    channel = self.bot.get_channel(channel_id)
+                    if channel:
+                        try:
+                            deleted = await channel.purge(limit=config['max_messages'])
+                            msg = f"{len(deleted)} messages supprimés dans le canal {channel_id}"
+                            logger.info(msg)
+                            results.append({"channel": channel_id, "status": "success", "deleted": len(deleted)})
+                        except discord.errors.Forbidden:
+                            msg = f"Accès refusé pour le canal {channel_id}"
+                            logger.error(msg)
+                            results.append({"channel": channel_id, "status": "error", "message": msg})
+                        except discord.errors.HTTPException as e:
+                            msg = f"Erreur HTTP pour le canal {channel_id}: {e}"
+                            logger.error(msg)
+                            results.append({"channel": channel_id, "status": "error", "message": msg})
+                    else:
+                        msg = f"Canal {channel_id} introuvable"
+                        logger.error(msg)
+                        results.append({"channel": channel_id, "status": "error", "message": msg})
+                except ValueError:
+                    msg = f"ID de canal invalide : {channel_id}"
                     logger.error(msg)
                     results.append({"channel": channel_id, "status": "error", "message": msg})
-                except discord.errors.HTTPException as e:
-                    msg = f"Erreur HTTP pour le canal {channel_id}: {e}"
-                    logger.error(msg)
-                    results.append({"channel": channel_id, "status": "error", "message": msg})
-            else:
-                msg = f"Canal {channel_id} introuvable"
-                logger.error(msg)
-                results.append({"channel": channel_id, "status": "error", "message": msg})
-        
-        return results
+            
+            return results
 
 # Instance globale du bot
 clean_bot = CleanBot()

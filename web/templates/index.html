@@ -24,7 +24,7 @@
                             {% endif %}
                         {% endwith %}
                         
-                        <form method="POST" action="{{ url_for('save_config') }}">
+                        <form method="POST" action="{{ url_for('save_config_route') }}">
                             <div class="mb-3">
                                 <label for="token" class="form-label">Token Discord</label>
                                 <input type="password" class="form-control" id="token" name="token" value="{{ config.token }}" required>

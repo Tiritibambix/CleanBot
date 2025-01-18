@@ -193,9 +193,13 @@ async def handle_purge(request):
                           content_type='application/json',
                           status=500)
 
+async def handle_health(request):
+    return web.Response(text="OK")
+
 async def run_api():
     app = web.Application()
     app.router.add_post('/purge', handle_purge)
+    app.router.add_get('/health', handle_health)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host='0.0.0.0', port=8081)

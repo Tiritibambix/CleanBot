@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialisation de l'affichage des options de planification
+    toggleScheduleOptions();
+
     // Animation des messages flash
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {

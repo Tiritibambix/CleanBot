@@ -4,72 +4,44 @@
 
 Discord Bot to Purge Server Channels
 
-## Features
+## New Web Interface!
 
-- 🌐 Web interface for easy configuration
-- 🔄 Automatic message purging
-- 🔲 Simple channel ID input
-- 🚀 Immediate purge button
-- 🔒 Secure configuration storage
-- 🐳 Docker support
-- 📝 Detailed operation feedback
+Cleanbot now comes with a beautiful web interface for easy configuration! You can now manage your bot settings through a user-friendly dashboard.
 
-## Option 1: Docker Deployment (Recommended)
+### Quick Start with Docker
 
-### Prerequisites
+The easiest way to run Cleanbot is using Docker:
 
-1. **Create a Discord Application**
-   1. Go to the Discord Developer Portal
-   2. Click on **New Application**, give it a name, and click on **Create**
-   3. Go to the **Bot** tab and click on **Add Bot**. Confirm
-   4. Under **Token**, click on **Copy** to save the bot token (keep it private)
-
-2. **Enable Necessary Intents**
-   1. In the Discord Developer Portal, select your application
-   2. Under **Bot** tab, enable the following Privileged Gateway Intents:
-      - Message Content Intent
-      - Server Members Intent
-
-3. **Configure Bot Permissions**
-   1. Under **OAuth2** > **URL Generator**:
-      - In **Scopes**, select `bot`
-      - In **Bot Permissions**, select:
-        - Read Messages/View Channels
-        - Manage Messages
-        - Read Message History
-   2. Copy the generated URL and open it in your browser
-   3. Follow the instructions to invite the bot to your server
-
-### Quick Start
-
-1. Create the configuration directory:
 ```bash
-mkdir -p /srv/Files/Cleanbot/config
-```
+# Create a config directory
+mkdir config
 
-2. Start the services:
-```bash
+# Start the bot and web interface
 docker-compose up -d
 ```
 
-3. Access the web interface at `http://localhost:5392`
+Then visit `http://localhost:8080` to configure your bot through the web interface.
 
-4. Enter your bot token and channel IDs in the web interface
+### Features
 
-### Docker Troubleshooting
+- 🌐 Web interface for easy configuration
+- 🔄 Automatic message purging
+- ⏰ Configurable schedule (daily, weekly, monthly)
+- 🔒 Secure configuration storage
+- 🐳 Docker support
+- 🚀 Easy deployment
 
-- Check container logs:
-```bash
-docker-compose logs -f
-```
-- Ensure the config directory has correct permissions
-- Verify network connectivity between containers
+### Configuration Options
 
-## Option 2: Local Development
+Through the web interface, you can configure:
+- Discord Bot Token
+- Channel IDs to purge
+- Maximum messages to delete per run
+- Purge schedule (daily, weekly, monthly)
 
-### Steps to Create and Run the Bot
+### Manual Setup (Alternative)
 
-#### 1. **Create a Discord Application**
+If you prefer to run without Docker, follow these steps:
 
 #### 1. **Create a Discord Application**
 
@@ -183,13 +155,24 @@ Add the following line to run the bot every Monday at 5:00 AM:
 
 This will ensure that your bot is automatically executed every Monday at 5:00 AM.
 
-## Security Considerations
+## Conclusion
 
-- Never commit or share your bot token
-- Use environment variables for sensitive data
-- Keep your dependencies up to date
-- Regularly check Discord Developer Portal for security updates
+With this guide, you have a Discord bot that purges messages every 7 days in the channels of your choice. You can adapt the script and settings according to your needs and use `cron` to schedule the automatic execution of the bot every Monday at 5:00 AM.
 
-## License
+---
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Important Points
+
+- **Keep your token secret**: Never share your token. If you think it is compromised, regenerate it from the Discord portal.
+- **Bot permissions**: Ensure the bot has the necessary permissions on each channel.
+- **Test locally**: Make sure the script works correctly before automating it.
+
+### Docker Images
+
+Our Docker images are available on Docker Hub:
+- Bot: `tiritibambix/cleanbot:latest`
+- Web Interface: `tiritibambix/cleanbot-web:latest`
+
+### License
+
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License - see the [LICENSE](LICENSE) file for details.

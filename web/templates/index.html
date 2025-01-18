@@ -32,8 +32,7 @@
                             
                             <div class="mb-3">
                                 <label for="channels" class="form-label">IDs des canaux (un par ligne)</label>
-                                <textarea class="form-control" id="channels" name="channels" rows="3">{% if config.get('channel_ids') %}{% for id in config.get('channel_ids') %}{{ id }}
-{% endfor %}{% endif %}</textarea>
+                                <textarea class="form-control" id="channels" name="channels" rows="3" spellcheck="false">{{ config.get('channel_ids', [])|join('\n') }}</textarea>
                                 <div class="form-text">Entrez un ID de canal Discord par ligne</div>
                             </div>
                             

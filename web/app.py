@@ -104,7 +104,7 @@ def save_config_route():
             'channel_ids': [
                 int(channel.strip())
                 for channel in request.form.get('channels', '').split('\n')
-                if channel.strip().isdigit()
+                if channel.strip()
             ],
             'max_messages': int(request.form.get('max_messages', 100))
         }

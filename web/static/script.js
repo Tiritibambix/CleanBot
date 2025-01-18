@@ -1,14 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Validation des IDs de canaux
-    const channelsTextarea = document.getElementById('channels');
-    channelsTextarea.addEventListener('input', function() {
-        const lines = this.value.split('\n');
-        const validLines = lines.filter(line => {
-            const trimmed = line.trim();
-            return trimmed === '' || /^\d+$/.test(trimmed);
-        });
-        this.value = validLines.join('\n');
-    });
+    // Initialisation de l'affichage des options de planification
+    toggleScheduleOptions();
 
     // Animation des messages flash
     const alerts = document.querySelectorAll('.alert');

@@ -80,15 +80,28 @@ def purge_now():
             flash('Configuration incomplète. Veuillez d\'abord configurer le bot.', 'danger')
             return redirect(url_for('index'))
         
-        # Appeler l'API du bot pour déclencher une purge immédiate
         try:
-            response = requests.post(BOT_API_URL, json=config, timeout=30)  # Augmentation du timeout à 30 secondes
+            response = requests.post(BOT_API_URL, json=config, timeout=30)
+            response_data = response.json()
+            
             if response.status_code == 200:
-                flash('Purge démarrée avec succès', 'success')
+                # Créer un résumé des résultats
+                success_count = sum(1 for r in response_data['results'] if r['status'] == 'success')
+                total_deleted = sum(r.get('deleted', 0) for r in response_data['results'] if r['status'] == 'success')
+                
+                if success_count == len(config['channel_ids']):
+                    flash(f'Purge réussie : {total_deleted} messages supprimés au total', 'success')
+                else:
+                    error_channels = [r for r in response_data['results'] if r['status'] == 'error']
+                    error_msgs = [f"Canal {r['channel']}: {r['message']}" for r in error_channels]
+                    flash(f'Purge partielle : {total_deleted} messages supprimés. Erreurs : {", ".join(error_msgs)}', 'warning')
             else:
-                flash(f'Erreur lors de la purge : {response.text}', 'danger')
+                flash(f'Erreur lors de la purge : {response_data.get("message", "Erreur inconnue")}', 'danger')
+                
         except requests.exceptions.RequestException as e:
             flash(f'Erreur de communication avec le bot : {str(e)}', 'danger')
+        except ValueError as e:
+            flash(f'Erreur lors du traitement de la réponse : {str(e)}', 'danger')
         
     except Exception as e:
         flash(f'Erreur : {str(e)}', 'danger')

@@ -11,4 +11,27 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => alert.remove(), 500);
         }, 3000);
     });
+
+    // Gestion des sélecteurs d'heure
+    function updateTimeInput(hourId, minuteId, targetInput) {
+        const hour = document.getElementById(hourId).value;
+        const minute = document.getElementById(minuteId).value;
+        document.getElementById(targetInput).value = `${hour}:${minute}`;
+    }
+
+    // Pour interval_time
+    document.getElementById('interval_time_hour').addEventListener('change', () => {
+        updateTimeInput('interval_time_hour', 'interval_time_minute', 'interval_time');
+    });
+    document.getElementById('interval_time_minute').addEventListener('change', () => {
+        updateTimeInput('interval_time_hour', 'interval_time_minute', 'interval_time');
+    });
+
+    // Pour specific_time
+    document.getElementById('specific_time_hour').addEventListener('change', () => {
+        updateTimeInput('specific_time_hour', 'specific_time_minute', 'specific_time');
+    });
+    document.getElementById('specific_time_minute').addEventListener('change', () => {
+        updateTimeInput('specific_time_hour', 'specific_time_minute', 'specific_time');
+    });
 });

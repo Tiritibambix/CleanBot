@@ -62,8 +62,20 @@
                                 </select>
                                 <div class="mt-2">
                                     <label for="interval_time" class="form-label">Heure d'exécution</label>
-                                    <input type="time" class="form-control" id="interval_time" name="interval_time" 
-                                           value="{{ config.interval_time or '00:00' }}" step="3600">
+                                    <div class="time-picker">
+                                        <select class="form-select" id="interval_time_hour" name="interval_time_hour">
+                                            {% for h in range(24) %}
+                                                <option value="{{ '%02d' % h }}" {% if h == (config.interval_time or '00:00').split(':')[0]|int %}selected{% endif %}>{{ '%02d' % h }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <span>:</span>
+                                        <select class="form-select" id="interval_time_minute" name="interval_time_minute">
+                                            {% for m in [0, 15, 30, 45] %}
+                                                <option value="{{ '%02d' % m }}" {% if m == (config.interval_time or '00:00').split(':')[1]|int %}selected{% endif %}>{{ '%02d' % m }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="hidden" id="interval_time" name="interval_time" value="{{ config.interval_time or '00:00' }}">
+                                    </div>
                                 </div>
                             </div>
 
@@ -110,8 +122,20 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label for="specific_time" class="form-label">Heure d'exécution</label>
-                                        <input type="time" class="form-control" id="specific_time" name="specific_time"
-                                               value="{{ config.specific_time or '00:00' }}" step="3600">
+                                        <div class="time-picker">
+                                            <select class="form-select" id="specific_time_hour" name="specific_time_hour">
+                                                {% for h in range(24) %}
+                                                    <option value="{{ '%02d' % h }}" {% if h == (config.specific_time or '00:00').split(':')[0]|int %}selected{% endif %}>{{ '%02d' % h }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <span>:</span>
+                                            <select class="form-select" id="specific_time_minute" name="specific_time_minute">
+                                                {% for m in [0, 15, 30, 45] %}
+                                                    <option value="{{ '%02d' % m }}" {% if m == (config.specific_time or '00:00').split(':')[1]|int %}selected{% endif %}>{{ '%02d' % m }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input type="hidden" id="specific_time" name="specific_time" value="{{ config.specific_time or '00:00' }}">
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -36,3 +36,18 @@ textarea {
     border-radius: 4px;
     margin-bottom: 20px;
 }
+
+/* Force l'affichage 24h en cachant le sélecteur AM/PM */
+input[type="time"]::-webkit-datetime-edit-ampm-field {
+    display: none;
+}
+
+/* Support Firefox */
+input[type="time"] {
+    -moz-appearance: textfield;
+}
+
+/* Support Edge/IE */
+input[type="time"]::-ms-datetime-edit-ampm-field {
+    display: none;
+}

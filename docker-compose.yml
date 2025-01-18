@@ -1,0 +1,23 @@
+services:
+  bot:
+    image: tiritibambix/cleanbot:latest
+    platform: linux/amd64
+    volumes:
+      - ./config:/app/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  web:
+    image: tiritibambix/cleanbot-web:latest
+    platform: linux/amd64
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config:/app/config
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+
+volumes:
+  config:

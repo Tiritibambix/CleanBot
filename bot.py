@@ -1,40 +1,74 @@
 import discord
 from discord.ext import commands
 import asyncio
+import yaml
+from pathlib import Path
+import time
 
-# Remplacez par votre propre token
-TOKEN = "VOTRE_TOKEN_ICI"
-# Remplacez par les IDs des canaux ou vous souhaitez effacer des messages
-CHANNEL_IDS = [123456789012345678, 987654321098765432]  # Exemple d'IDs de canaux
-# Nombre maximum de messages a supprimer par execution
-AMOUNT_TO_CLEAR = 100
+CONFIG_PATH = Path("/app/config/config.yaml")
 
-# Initialisation du bot avec les intentions necessaires
-intents = discord.Intents.default()
-intents.messages = True  # Permet au bot d'interagir avec les messages
-intents.message_content = True  # Necessaire pour acceder au contenu des messages
-bot = commands.Bot(command_prefix="!", intents=intents)
+def load_config():
+    if not CONFIG_PATH.exists():
+        raise ValueError("Le fichier de configuration n'existe pas")
+    
+    with open(CONFIG_PATH, 'r') as f:
+        config = yaml.safe_load(f)
+        
+    if not config:
+        raise ValueError("Configuration invalide")
+        
+    return config
 
-@bot.event
-async def on_ready():
-    print(f"Bot connected comme {bot.user}")
-
-    for channel_id in CHANNEL_IDS:
+async def purge_channels(bot, config):
+    for channel_id in config['channel_ids']:
         channel = bot.get_channel(channel_id)
         if channel:
             try:
-                # Purge des messages dans le canal
-                deleted = await channel.purge(limit=AMOUNT_TO_CLEAR)
-                print(f"{len(deleted)} messages supprimes dans le canal {channel_id}.")
+                deleted = await channel.purge(limit=config['max_messages'])
+                print(f"{len(deleted)} messages supprimés dans le canal {channel_id}.")
             except discord.errors.Forbidden:
-                print(f"Acces refuse pour supprimer les messages dans le canal {channel_id}.")
+                print(f"Accès refusé pour supprimer les messages dans le canal {channel_id}.")
             except discord.errors.HTTPException as e:
                 print(f"Erreur HTTP lors de la tentative de purge dans le canal {channel_id}: {e}")
         else:
             print(f"Canal avec ID {channel_id} introuvable.")
 
-    # Arreter le bot apres l'execution de la purge
-    await bot.close()
+def get_sleep_time(schedule):
+    if schedule == 'daily':
+        return 24 * 60 * 60  # 24 heures
+    elif schedule == 'weekly':
+        return 7 * 24 * 60 * 60  # 7 jours
+    elif schedule == 'monthly':
+        return 30 * 24 * 60 * 60  # ~30 jours
+    else:
+        return 7 * 24 * 60 * 60  # Par défaut: hebdomadaire
 
-# Lancer le bot
-bot.run(TOKEN)
+async def main():
+    while True:
+        try:
+            config = load_config()
+            
+            intents = discord.Intents.default()
+            intents.messages = True
+            intents.message_content = True
+            bot = commands.Bot(command_prefix="!", intents=intents)
+            
+            @bot.event
+            async def on_ready():
+                print(f"Bot connecté comme {bot.user}")
+                await purge_channels(bot, config)
+                await bot.close()
+            
+            await bot.start(config['token'])
+            
+            sleep_time = get_sleep_time(config.get('schedule', 'weekly'))
+            print(f"En attente {sleep_time} secondes avant la prochaine exécution...")
+            await asyncio.sleep(sleep_time)
+            
+        except Exception as e:
+            print(f"Erreur : {str(e)}")
+            print("Nouvelle tentative dans 5 minutes...")
+            await asyncio.sleep(300)
+
+if __name__ == "__main__":
+    asyncio.run(main())

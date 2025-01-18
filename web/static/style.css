@@ -1,0 +1,38 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(45deg, #4a90e2, #7e57c2);
+}
+
+.form-control:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #4a90e2, #7e57c2);
+    border: none;
+    padding: 10px 30px;
+    transition: transform 0.2s;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(45deg, #357abd, #6a48a8);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.alert {
+    border-radius: 4px;
+    margin-bottom: 20px;
+}

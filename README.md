@@ -4,11 +4,44 @@
 
 Discord Bot to Purge Server Channels
 
-Creating a Discord bot to delete messages from different channels is feasible with Python and the `discord.py` library. Here is a simple guide to set it up on Debian.
+## New Web Interface!
 
----
+Cleanbot now comes with a beautiful web interface for easy configuration! You can now manage your bot settings through a user-friendly dashboard.
 
-### Steps to Create and Run the Bot
+### Quick Start with Docker
+
+The easiest way to run Cleanbot is using Docker:
+
+```bash
+# Create a config directory
+mkdir config
+
+# Start the bot and web interface
+docker-compose up -d
+```
+
+Then visit `http://localhost:8080` to configure your bot through the web interface.
+
+### Features
+
+- 🌐 Web interface for easy configuration
+- 🔄 Automatic message purging
+- ⏰ Configurable schedule (daily, weekly, monthly)
+- 🔒 Secure configuration storage
+- 🐳 Docker support
+- 🚀 Easy deployment
+
+### Configuration Options
+
+Through the web interface, you can configure:
+- Discord Bot Token
+- Channel IDs to purge
+- Maximum messages to delete per run
+- Purge schedule (daily, weekly, monthly)
+
+### Manual Setup (Alternative)
+
+If you prefer to run without Docker, follow these steps:
 
 #### 1. **Create a Discord Application**
 
@@ -133,3 +166,13 @@ With this guide, you have a Discord bot that purges messages every 7 days in the
 - **Keep your token secret**: Never share your token. If you think it is compromised, regenerate it from the Discord portal.
 - **Bot permissions**: Ensure the bot has the necessary permissions on each channel.
 - **Test locally**: Make sure the script works correctly before automating it.
+
+### Docker Images
+
+Our Docker images are available on Docker Hub:
+- Bot: `tiritibambix/cleanbot:latest`
+- Web Interface: `tiritibambix/cleanbot-web:latest`
+
+### License
+
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License - see the [LICENSE](LICENSE) file for details.

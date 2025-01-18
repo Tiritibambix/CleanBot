@@ -10,17 +10,58 @@ Cleanbot now comes with a beautiful web interface for easy configuration! You ca
 
 ### Quick Start with Docker
 
-The easiest way to run Cleanbot is using Docker:
+The easiest way to run Cleanbot is using Docker. Here's how to set it up:
 
+1. First, create a directory for your configuration:
 ```bash
-# Create a config directory
-mkdir config
+mkdir -p /srv/Files/Cleanbot/config
+```
 
-# Start the bot and web interface
+2. Start the services using docker-compose:
+```bash
 docker-compose up -d
 ```
 
-Then visit `http://localhost:8080` to configure your bot through the web interface.
+The docker-compose.yml file includes:
+- A web interface accessible on port 5392 by default (can be changed to any port of your choice)
+- A bot service that handles Discord interactions
+- Automatic restart on failure
+- Persistent configuration storage
+
+Configuration:
+```yaml
+version: '3.8'
+
+services:
+  web:
+    image: tiritibambix/cleanbot-web:latest
+    ports:
+      - "5392:8080"  # Change "5392" to any port you want to use
+    volumes:
+      - /srv/Files/Cleanbot/config:/app/config
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+
+  bot:
+    image: tiritibambix/cleanbot:latest
+    volumes:
+      - /srv/Files/Cleanbot/config:/app/config
+    expose:
+      - "8081"
+    restart: unless-stopped
+
+networks:
+  cleanbot_network:
+    driver: bridge
+```
+
+Usage:
+- Access the web interface at http://localhost:5392
+- Configure your Discord bot token and channel IDs
+- Set up your cleaning schedule
+- Use `docker-compose logs` to view the logs
+- Use `docker-compose down` to stop the services
 
 ### Features
 

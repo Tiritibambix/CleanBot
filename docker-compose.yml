@@ -10,29 +10,19 @@ services:
     environment:
       - FLASK_ENV=production
     networks:
-      cleanbot_network:
-        aliases:
-          - web
+      - cleanbot_network
     restart: unless-stopped
 
   bot:
     image: tiritibambix/cleanbot:latest
     volumes:
-      - /srv/dev-disk-by-uuid-7fe66601-5ca0-4c09-bc13-a015025fe53a/Files/Cleanbot/config:/app/config
+      - /srv/Files/Cleanbot/config:/app/config
     expose:
       - "8081"
     networks:
-      cleanbot_network:
-        aliases:
-          - bot
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - cleanbot_network
     restart: unless-stopped
 
 networks:
   cleanbot_network:
-    name: cleanbot_network
     driver: bridge

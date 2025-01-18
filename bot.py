@@ -172,9 +172,9 @@ async def run_api():
     app.router.add_post('/purge', handle_purge)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 8081)
+    site = web.TCPSite(runner, host='0.0.0.0', port=8081)
     await site.start()
-    logger.info("API démarrée sur le port 8081")
+    logger.info("API démarrée sur 0.0.0.0:8081")
 
 async def main():
     try:

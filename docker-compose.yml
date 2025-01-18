@@ -1,28 +1,28 @@
 services:
-  bot:
-    image: tiritibambix/cleanbot:latest
-    platform: linux/amd64
-    volumes:
-      - ./config:/app/config
-    ports:
-      - "8081:8081"
-    networks:
-      - cleanbot_network
-    depends_on:
-      - web
-    restart: unless-stopped
-
   web:
     image: tiritibambix/cleanbot-web:latest
     platform: linux/amd64
     ports:
-      - "8080:8080"
+      - "5392:8080"
     volumes:
-      - ./config:/app/config
+      - /srv/Files/Cleanbot/config:/app/config
     environment:
       - FLASK_ENV=production
     networks:
       - cleanbot_network
+    restart: unless-stopped
+
+  bot:
+    image: tiritibambix/cleanbot:latest
+    platform: linux/amd64
+    volumes:
+      - /srv/dev-disk-by-uuid-7fe66601-5ca0-4c09-bc13-a015025fe53a/Files/Cleanbot/config:/app/config
+    expose:
+      - "8081"
+    networks:
+      - cleanbot_network
+    depends_on:
+      - web
     restart: unless-stopped
 
 networks:

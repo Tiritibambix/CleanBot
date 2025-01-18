@@ -3,11 +3,14 @@ import yaml
 import os
 from pathlib import Path
 import re
+import json
+import requests
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 CONFIG_PATH = Path("/app/config/config.yaml")
+BOT_API_URL = "http://bot:8081/purge"  # URL du service bot
 
 def is_valid_cron(expression):
     pattern = r'^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|(\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9]))) (\*|([0-9]|1[0-9]|2[0-3])|(\*\/([0-9]|1[0-9]|2[0-3]))) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|(\*\/([1-9]|1[0-9]|2[0-9]|3[0-1]))) (\*|([1-9]|1[0-2])|(\*\/([1-9]|1[0-2]))) (\*|([0-6])|(\*\/([0-6])))$'
@@ -67,6 +70,30 @@ def process_schedule_config(form_data):
 def index():
     config = load_config()
     return render_template('index.html', config=config)
+
+@app.route('/purge-now')
+def purge_now():
+    try:
+        config = load_config()
+        
+        if not config.get('token') or not config.get('channel_ids'):
+            flash('Configuration incomplète. Veuillez d\'abord configurer le bot.', 'danger')
+            return redirect(url_for('index'))
+        
+        # Appeler l'API du bot pour déclencher une purge immédiate
+        try:
+            response = requests.post(BOT_API_URL, json=config, timeout=5)
+            if response.status_code == 200:
+                flash('Purge démarrée avec succès', 'success')
+            else:
+                flash(f'Erreur lors de la purge : {response.text}', 'danger')
+        except requests.exceptions.RequestException as e:
+            flash(f'Erreur de communication avec le bot : {str(e)}', 'danger')
+        
+    except Exception as e:
+        flash(f'Erreur : {str(e)}', 'danger')
+    
+    return redirect(url_for('index'))
 
 @app.route('/save', methods=['POST'])
 def save_config_route():

@@ -6,6 +6,8 @@ from pathlib import Path
 import time
 from datetime import datetime, timedelta
 import croniter
+from aiohttp import web
+import json
 
 CONFIG_PATH = Path("/app/config/config.yaml")
 
@@ -91,7 +93,53 @@ def get_next_run_time(config):
         next_run = cron.get_next(datetime)
         return (next_run - now).total_seconds()
 
+async def setup_bot(config):
+    intents = discord.Intents.default()
+    intents.messages = True
+    intents.message_content = True
+    bot = commands.Bot(command_prefix="!", intents=intents)
+    
+    try:
+        await bot.login(config['token'])
+        await bot.connect()
+    except Exception as e:
+        print(f"Erreur lors de la connexion du bot : {e}")
+        return None
+    
+    return bot
+
+async def handle_purge(request):
+    try:
+        config = await request.json()
+        
+        if not config.get('token') or not config.get('channel_ids'):
+            return web.Response(text="Configuration invalide", status=400)
+        
+        bot = await setup_bot(config)
+        if not bot:
+            return web.Response(text="Erreur de connexion du bot", status=500)
+        
+        await purge_channels(bot, config)
+        await bot.close()
+        
+        return web.Response(text="Purge effectuée avec succès")
+        
+    except Exception as e:
+        return web.Response(text=str(e), status=500)
+
+async def run_api():
+    app = web.Application()
+    app.router.add_post('/purge', handle_purge)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8081)
+    await site.start()
+    print("API démarrée sur le port 8081")
+
 async def main():
+    # Démarrer l'API
+    asyncio.create_task(run_api())
+    
     while True:
         try:
             config = load_config()
@@ -100,18 +148,10 @@ async def main():
             print(f"Prochaine exécution dans {sleep_time/3600:.2f} heures")
             await asyncio.sleep(sleep_time)
             
-            intents = discord.Intents.default()
-            intents.messages = True
-            intents.message_content = True
-            bot = commands.Bot(command_prefix="!", intents=intents)
-            
-            @bot.event
-            async def on_ready():
-                print(f"Bot connecté comme {bot.user}")
+            bot = await setup_bot(config)
+            if bot:
                 await purge_channels(bot, config)
                 await bot.close()
-            
-            await bot.start(config['token'])
             
         except Exception as e:
             print(f"Erreur : {str(e)}")

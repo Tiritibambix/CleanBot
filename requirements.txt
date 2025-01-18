@@ -1,3 +1,4 @@
 discord.py==2.3.2
 pyyaml==6.0.1
 python-dotenv==1.0.0
+croniter==2.0.1

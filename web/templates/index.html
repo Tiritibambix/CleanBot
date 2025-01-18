@@ -63,7 +63,7 @@
                                 <div class="mt-2">
                                     <label for="interval_time" class="form-label">Heure d'exécution</label>
                                     <input type="time" class="form-control" id="interval_time" name="interval_time" 
-                                           value="{{ config.interval_time or '00:00' }}" step="1">
+                                           value="{{ config.interval_time or '00:00' }}" step="3600">
                                 </div>
                             </div>
 
@@ -111,7 +111,7 @@
                                     <div class="col-md-6">
                                         <label for="specific_time" class="form-label">Heure d'exécution</label>
                                         <input type="time" class="form-control" id="specific_time" name="specific_time"
-                                               value="{{ config.specific_time or '00:00' }}" step="1">
+                                               value="{{ config.specific_time or '00:00' }}" step="3600">
                                     </div>
                                 </div>
                             </div>

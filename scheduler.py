@@ -6,10 +6,20 @@ from bot import purge_channels
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import asyncio
+import pytz
+import os
 
-# Configuration du logging
-logging.basicConfig(level=logging.INFO)
+# Configuration du logging avec timezone
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %Z'
+)
 logger = logging.getLogger(__name__)
+
+# Configurer le timezone du logger
+tz = pytz.timezone(os.getenv('TZ', 'Europe/Paris'))
+logging.Formatter.converter = lambda *args: datetime.now(tz=tz).timetuple()
 
 CONFIG_PATH = Path("/app/config/config.yaml")
 
@@ -40,7 +50,8 @@ async def execute_purge():
     try:
         config = load_config()
         if config:
-            logger.info("Exécution de la purge planifiée")
+            current_time = datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S %Z')
+            logger.info(f"Exécution de la purge planifiée à {current_time}")
             await purge_channels(
                 config['token'],
                 config['channel_ids'],
@@ -50,7 +61,7 @@ async def execute_purge():
         logger.error(f"Erreur lors de l'exécution de la purge : {e}")
 
 async def setup_scheduler():
-    scheduler = AsyncIOScheduler()
+    scheduler = AsyncIOScheduler(timezone=tz)
     
     async def update_schedule():
         scheduler.remove_all_jobs()
@@ -64,7 +75,8 @@ async def setup_scheduler():
                     id='purge_job',
                     name='Purge Discord channels'
                 )
-                logger.info(f"Tâche planifiée avec l'expression cron : {cron_expr}")
+                current_time = datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S %Z')
+                logger.info(f"Tâche planifiée avec l'expression cron : {cron_expr} (heure actuelle : {current_time})")
     
     # Configuration initiale
     await update_schedule()
@@ -79,6 +91,8 @@ async def setup_scheduler():
     )
     
     scheduler.start()
+    current_time = datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S %Z')
+    logger.info(f"Scheduler démarré à {current_time}")
     
     try:
         # Garder le processus en vie
@@ -88,4 +102,5 @@ async def setup_scheduler():
         scheduler.shutdown()
 
 if __name__ == "__main__":
+    logger.info(f"Timezone configurée : {tz.zone}")
     asyncio.run(setup_scheduler())

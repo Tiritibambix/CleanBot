@@ -9,6 +9,7 @@ services:
       - /srv/Files/Cleanbot/config:/app/config
     environment:
       - FLASK_ENV=production
+      - TZ=Europe/Paris
     networks:
       - cleanbot_network
     restart: unless-stopped
@@ -17,6 +18,8 @@ services:
     image: tiritibambix/cleanbot:latest
     volumes:
       - /srv/Files/Cleanbot/config:/app/config
+    environment:
+      - TZ=Europe/Paris
     expose:
       - "8081"
     networks:

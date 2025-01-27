@@ -3,10 +3,11 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY bot.py .
+COPY scheduler.py .
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8081
 
-CMD ["python", "bot.py"]
+CMD ["sh", "-c", "python bot.py & python scheduler.py"]

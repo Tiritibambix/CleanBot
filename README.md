@@ -30,8 +30,6 @@ The docker-compose.yml file includes:
 
 Configuration:
 ```yaml
-version: '3.8'
-
 services:
   web:
     image: tiritibambix/cleanbot-web:latest

@@ -33,17 +33,20 @@ services:
   web:
     image: tiritibambix/cleanbot-web:latest
     ports:
-      - "5392:8080"  # Remplacez "5392" par le port de votre choix
+      - "5392:8080"  # Change "5392" to any port you want to use
     volumes:
       - /srv/Files/Cleanbot/config:/app/config
     environment:
       - FLASK_ENV=production
+      - TZ=Europe/Paris
     restart: unless-stopped
 
   bot:
     image: tiritibambix/cleanbot:latest
     volumes:
       - /srv/Files/Cleanbot/config:/app/config
+    environment:
+      - TZ=Europe/Paris
     expose:
       - "8081"
     restart: unless-stopped

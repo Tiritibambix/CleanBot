@@ -39,12 +39,15 @@ services:
       - /srv/Files/Cleanbot/config:/app/config
     environment:
       - FLASK_ENV=production
+      - TZ=Europe/Paris
     restart: unless-stopped
 
   bot:
     image: tiritibambix/cleanbot:latest
     volumes:
       - /srv/Files/Cleanbot/config:/app/config
+    environment:
+      - TZ=Europe/Paris
     expose:
       - "8081"
     restart: unless-stopped

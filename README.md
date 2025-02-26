@@ -1,4 +1,6 @@
-![Cleanbot](https://cdn.discordapp.com/app-icons/1310261454959673354/79876aac97de54fdfc9a06fbca4f32ff.png "Cleanbot")
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tiritibambix/cleanbot/refs/heads/main/web/assets/Banner.png" width="500" />
+</p>
 
 # Cleanbot
 

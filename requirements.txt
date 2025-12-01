@@ -1,5 +1,5 @@
-discord.py==2.6.3
-aiohttp==3.12.15
-PyYAML==6.0.2
-APScheduler==3.11.0
+discord.py==2.6.4
+aiohttp==3.13.2
+PyYAML==6.0.3
+APScheduler==3.11.1
 pytz==2025.2

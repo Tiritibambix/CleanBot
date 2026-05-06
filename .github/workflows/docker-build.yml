@@ -48,7 +48,7 @@ jobs:
 
     # Build and push Bot Docker image
     - name: Build and push Bot Docker image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: .
         file: Dockerfile.bot
@@ -60,7 +60,7 @@ jobs:
 
     # Build and push Web Docker image
     - name: Build and push Web Docker image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: .
         file: Dockerfile.web

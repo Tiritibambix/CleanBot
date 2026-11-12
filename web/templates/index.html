@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ current_lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CleanBot Configuration</title>
+    <title>{{ t('page_title') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -12,8 +12,14 @@
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h2 class="text-center mb-0">Configuration CleanBot</h2>
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h2 class="text-center mb-0">{{ t('card_title') }}</h2>
+                        <div class="lang-switcher btn-group btn-group-sm" role="group" aria-label="Language">
+                            {% for lang in supported_langs %}
+                                <a href="{{ url_for('set_lang', lang_code=lang) }}"
+                                   class="btn btn-light {% if lang == current_lang %}active{% endif %}">{{ lang|upper }}</a>
+                            {% endfor %}
+                        </div>
                     </div>
                     <div class="card-body">
                         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -26,47 +32,42 @@
                         
                         <form method="POST" action="{{ url_for('save_config_route') }}">
                             <div class="mb-3">
-                                <label for="token" class="form-label">Token Discord</label>
+                                <label for="token" class="form-label">{{ t('label_token') }}</label>
                                 <input type="password" class="form-control" id="token" name="token" value="{{ config.token }}" required>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="channels" class="form-label">IDs des canaux (un par ligne)</label>
+                                <label for="channels" class="form-label">{{ t('label_channels') }}</label>
                                 <textarea class="form-control" id="channels" name="channels" rows="3" spellcheck="false">{{ config.get('channels_raw', config.get('channel_ids', [])|join('\n')) }}</textarea>
-                                <div class="form-text">
-                                    Entrez un ID de canal Discord par ligne. Ajoutez une description après
-                                    <code>#</code> pour vous souvenir de quel canal il s'agit (elle est
-                                    ignorée lors de la purge), par ex. :<br>
-                                    <code>123456789012345678 # Annonces générales</code>
-                                </div>
+                                <div class="form-text">{{ t('help_channels')|safe }}</div>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="max_messages" class="form-label">Nombre maximum de messages à supprimer</label>
+                                <label for="max_messages" class="form-label">{{ t('label_max_messages') }}</label>
                                 <input type="number" class="form-control" id="max_messages" name="max_messages" value="{{ config.max_messages }}" min="1" max="1000" required>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="schedule_type" class="form-label">Type de planification</label>
+                                <label for="schedule_type" class="form-label">{{ t('label_schedule_type') }}</label>
                                 <select class="form-select" id="schedule_type" name="schedule_type" onchange="toggleScheduleOptions()">
-                                    <option value="interval" {% if config.schedule_type == 'interval' %}selected{% endif %}>Intervalle régulier</option>
-                                    <option value="specific" {% if config.schedule_type == 'specific' %}selected{% endif %}>Jours spécifiques</option>
-                                    <option value="custom" {% if config.schedule_type == 'custom' %}selected{% endif %}>Personnalisé</option>
+                                    <option value="interval" {% if config.schedule_type == 'interval' %}selected{% endif %}>{{ t('option_schedule_interval') }}</option>
+                                    <option value="specific" {% if config.schedule_type == 'specific' %}selected{% endif %}>{{ t('option_schedule_specific') }}</option>
+                                    <option value="custom" {% if config.schedule_type == 'custom' %}selected{% endif %}>{{ t('option_schedule_custom') }}</option>
                                 </select>
                             </div>
 
                             <!-- Options d'intervalle -->
                             <div id="interval_options" class="schedule-options mb-3">
-                                <label for="interval" class="form-label">Intervalle</label>
+                                <label for="interval" class="form-label">{{ t('label_interval') }}</label>
                                 <select class="form-select" id="interval" name="interval">
-                                    <option value="hourly" {% if config.interval == 'hourly' %}selected{% endif %}>Toutes les heures</option>
-                                    <option value="daily" {% if config.interval == 'daily' %}selected{% endif %}>Tous les jours</option>
-                                    <option value="weekly" {% if config.interval == 'weekly' %}selected{% endif %}>Toutes les semaines</option>
-                                    <option value="biweekly" {% if config.interval == 'biweekly' %}selected{% endif %}>Toutes les deux semaines</option>
-                                    <option value="monthly" {% if config.interval == 'monthly' %}selected{% endif %}>Tous les mois</option>
+                                    <option value="hourly" {% if config.interval == 'hourly' %}selected{% endif %}>{{ t('option_interval_hourly') }}</option>
+                                    <option value="daily" {% if config.interval == 'daily' %}selected{% endif %}>{{ t('option_interval_daily') }}</option>
+                                    <option value="weekly" {% if config.interval == 'weekly' %}selected{% endif %}>{{ t('option_interval_weekly') }}</option>
+                                    <option value="biweekly" {% if config.interval == 'biweekly' %}selected{% endif %}>{{ t('option_interval_biweekly') }}</option>
+                                    <option value="monthly" {% if config.interval == 'monthly' %}selected{% endif %}>{{ t('option_interval_monthly') }}</option>
                                 </select>
                                 <div class="mt-2">
-                                    <label for="interval_time" class="form-label">Heure d'exécution</label>
+                                    <label for="interval_time" class="form-label">{{ t('label_exec_time') }}</label>
                                     <div class="time-picker">
                                         <select class="form-select" id="interval_time_hour" name="interval_time_hour">
                                             {% for h in range(24) %}
@@ -88,45 +89,45 @@
                             <div id="specific_options" class="schedule-options mb-3" style="display: none;">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <label class="form-label">Jours de la semaine</label>
+                                        <label class="form-label">{{ t('label_weekdays') }}</label>
                                         <div class="form-check">
                                             <input type="checkbox" class="form-check-input" id="monday" name="weekdays[]" value="monday" 
                                                    {% if 'monday' in config.weekdays %}checked{% endif %}>
-                                            <label class="form-check-label" for="monday">Lundi</label>
+                                            <label class="form-check-label" for="monday">{{ t('day_monday') }}</label>
                                         </div>
                                         <div class="form-check">
                                             <input type="checkbox" class="form-check-input" id="tuesday" name="weekdays[]" value="tuesday"
                                                    {% if 'tuesday' in config.weekdays %}checked{% endif %}>
-                                            <label class="form-check-label" for="tuesday">Mardi</label>
+                                            <label class="form-check-label" for="tuesday">{{ t('day_tuesday') }}</label>
                                         </div>
                                         <div class="form-check">
                                             <input type="checkbox" class="form-check-input" id="wednesday" name="weekdays[]" value="wednesday"
                                                    {% if 'wednesday' in config.weekdays %}checked{% endif %}>
-                                            <label class="form-check-label" for="wednesday">Mercredi</label>
+                                            <label class="form-check-label" for="wednesday">{{ t('day_wednesday') }}</label>
                                         </div>
                                         <div class="form-check">
                                             <input type="checkbox" class="form-check-input" id="thursday" name="weekdays[]" value="thursday"
                                                    {% if 'thursday' in config.weekdays %}checked{% endif %}>
-                                            <label class="form-check-label" for="thursday">Jeudi</label>
+                                            <label class="form-check-label" for="thursday">{{ t('day_thursday') }}</label>
                                         </div>
                                         <div class="form-check">
                                             <input type="checkbox" class="form-check-input" id="friday" name="weekdays[]" value="friday"
                                                    {% if 'friday' in config.weekdays %}checked{% endif %}>
-                                            <label class="form-check-label" for="friday">Vendredi</label>
+                                            <label class="form-check-label" for="friday">{{ t('day_friday') }}</label>
                                         </div>
                                         <div class="form-check">
                                             <input type="checkbox" class="form-check-input" id="saturday" name="weekdays[]" value="saturday"
                                                    {% if 'saturday' in config.weekdays %}checked{% endif %}>
-                                            <label class="form-check-label" for="saturday">Samedi</label>
+                                            <label class="form-check-label" for="saturday">{{ t('day_saturday') }}</label>
                                         </div>
                                         <div class="form-check">
                                             <input type="checkbox" class="form-check-input" id="sunday" name="weekdays[]" value="sunday"
                                                    {% if 'sunday' in config.weekdays %}checked{% endif %}>
-                                            <label class="form-check-label" for="sunday">Dimanche</label>
+                                            <label class="form-check-label" for="sunday">{{ t('day_sunday') }}</label>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="specific_time" class="form-label">Heure d'exécution</label>
+                                        <label for="specific_time" class="form-label">{{ t('label_exec_time') }}</label>
                                         <div class="time-picker">
                                             <select class="form-select" id="specific_time_hour" name="specific_time_hour">
                                                 {% for h in range(24) %}
@@ -147,18 +148,18 @@
 
                             <!-- Options personnalisées -->
                             <div id="custom_options" class="schedule-options mb-3" style="display: none;">
-                                <label for="cron_expression" class="form-label">Expression Cron</label>
+                                <label for="cron_expression" class="form-label">{{ t('label_cron') }}</label>
                                 <input type="text" class="form-control" id="cron_expression" name="cron_expression"
                                        placeholder="*/30 * * * *" value="{{ config.cron_expression }}"
                                        pattern="^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|(\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9]))) (\*|([0-9]|1[0-9]|2[0-3])|(\*\/([0-9]|1[0-9]|2[0-3]))) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|(\*\/([1-9]|1[0-9]|2[0-9]|3[0-1]))) (\*|([1-9]|1[0-2])|(\*\/([1-9]|1[0-2]))) (\*|([0-6])|(\*\/([0-6])))$">
-                                <small class="form-text text-muted">Format: minute heure jour mois jour_semaine (ex: */30 * * * * pour toutes les 30 minutes)</small>
+                                <small class="form-text text-muted">{{ t('help_cron') }}</small>
                             </div>
 
                             <div class="text-center">
-                                <button type="submit" class="btn btn-primary me-2">Sauvegarder la configuration</button>
+                                <button type="submit" class="btn btn-primary me-2">{{ t('btn_save') }}</button>
                                 <a href="{{ url_for('purge_now') }}" class="btn btn-danger" 
-                                   onclick="return confirm('Êtes-vous sûr de vouloir purger tous les canaux maintenant ?')">
-                                    Purger maintenant
+                                   onclick="return confirm('{{ t('confirm_purge')|replace("'", "\\'") }}')">
+                                    {{ t('btn_purge_now') }}
                                 </a>
                             </div>
                         </form>

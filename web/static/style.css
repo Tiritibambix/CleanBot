@@ -37,6 +37,16 @@ textarea {
     margin-bottom: 20px;
 }
 
+/* Sélecteur de langue FR/EN dans l'en-tête */
+.lang-switcher a {
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.lang-switcher a.active {
+    opacity: 1;
+}
+
 /* Style pour le sélecteur d'heure personnalisé */
 .time-picker {
     display: flex;

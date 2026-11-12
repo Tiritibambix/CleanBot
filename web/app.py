@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, flash, redirect, url_for
+from flask import Flask, render_template, request, flash, redirect, url_for, make_response
 import yaml
 import os
 from pathlib import Path
 import re
 import json
 import requests
+from translations import TRANSLATIONS, SUPPORTED_LANGS, DEFAULT_LANG
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -12,6 +13,38 @@ app.secret_key = os.urandom(24)
 CONFIG_PATH = Path("/app/config/config.yaml")
 BOT_API_URL = "http://bot:8081/purge"  # URL du service bot
 CHANNEL_COMMENT_DELIMITER = '#'  # tout ce qui suit ce caractère sur une ligne est une description, pas l'ID
+LANG_COOKIE_NAME = 'lang'
+LANG_COOKIE_MAX_AGE = 60 * 60 * 24 * 365  # 1 an
+
+def get_lang():
+    """Langue courante, choisie par l'utilisateur via le sélecteur FR/EN (cookie).
+
+    Un simple cookie (plutôt que la session Flask signée) est utilisé ici :
+    c'est une préférence d'affichage sans enjeu de sécurité, et ça évite tout
+    souci si app.secret_key change au redémarrage du conteneur.
+    """
+    lang = request.cookies.get(LANG_COOKIE_NAME, DEFAULT_LANG)
+    return lang if lang in SUPPORTED_LANGS else DEFAULT_LANG
+
+def t(key, **kwargs):
+    """Traduit `key` dans la langue courante, avec interpolation `{...}` optionnelle."""
+    strings = TRANSLATIONS.get(get_lang(), TRANSLATIONS[DEFAULT_LANG])
+    template = strings.get(key, TRANSLATIONS[DEFAULT_LANG].get(key, key))
+    return template.format(**kwargs) if kwargs else template
+
+# Rend t() et la langue courante disponibles dans tous les templates Jinja
+app.jinja_env.globals['t'] = t
+
+@app.context_processor
+def inject_lang():
+    return {'current_lang': get_lang(), 'supported_langs': SUPPORTED_LANGS}
+
+@app.route('/lang/<lang_code>')
+def set_lang(lang_code):
+    target = lang_code if lang_code in SUPPORTED_LANGS else DEFAULT_LANG
+    resp = make_response(redirect(request.referrer or url_for('index')))
+    resp.set_cookie(LANG_COOKIE_NAME, target, max_age=LANG_COOKIE_MAX_AGE)
+    return resp
 
 def parse_channel_lines(raw_text):
     """Transforme le contenu du textarea 'channels' en liste d'IDs.
@@ -100,10 +133,29 @@ def process_schedule_config(form_data):
     else:  # custom
         cron_expression = form_data.get('cron_expression', '0 0 * * *')
         if not is_valid_cron(cron_expression):
-            raise ValueError("Expression cron invalide")
+            raise ValueError(t('error_invalid_cron'))
         schedule_config['cron_expression'] = cron_expression
     
     return schedule_config
+
+def format_purge_error(result):
+    """Construit, dans la langue courante, le message d'erreur pour un canal
+    à partir du `reason` structuré renvoyé par bot.py (voir bot.py)."""
+    channel = result.get('channel', '?')
+    reason = result.get('reason', 'unknown')
+    detail = result.get('detail', '')
+
+    if reason == 'forbidden':
+        return t('purge_error_forbidden', channel=channel)
+    if reason == 'http_error':
+        return t('purge_error_http_error', channel=channel, detail=detail)
+    if reason == 'not_found':
+        return t('purge_error_not_found', channel=channel)
+    if reason == 'invalid_id':
+        return t('purge_error_invalid_id', channel=channel)
+    if reason == 'auth':
+        return t('purge_error_auth', detail=detail)
+    return t('purge_error_unknown', channel=channel, detail=detail)
 
 @app.route('/')
 def index():
@@ -116,7 +168,7 @@ def purge_now():
         config = load_config()
         
         if not config.get('token') or not config.get('channel_ids'):
-            flash('Configuration incomplète. Veuillez d\'abord configurer le bot.', 'danger')
+            flash(t('flash_incomplete_config'), 'danger')
             return redirect(url_for('index'))
         
         try:
@@ -129,21 +181,21 @@ def purge_now():
                 total_deleted = sum(r.get('deleted', 0) for r in response_data['results'] if r['status'] == 'success')
                 
                 if success_count == len(config['channel_ids']):
-                    flash(f'Purge réussie : {total_deleted} messages supprimés au total', 'success')
+                    flash(t('flash_purge_success', count=total_deleted), 'success')
                 else:
                     error_channels = [r for r in response_data['results'] if r['status'] == 'error']
-                    error_msgs = [f"Canal {r['channel']}: {r['message']}" for r in error_channels]
-                    flash(f'Purge partielle : {total_deleted} messages supprimés. Erreurs : {", ".join(error_msgs)}', 'warning')
+                    error_msgs = [format_purge_error(r) for r in error_channels]
+                    flash(t('flash_purge_partial', count=total_deleted, errors=", ".join(error_msgs)), 'warning')
             else:
-                flash(f'Erreur lors de la purge : {response_data.get("message", "Erreur inconnue")}', 'danger')
+                flash(t('flash_purge_error', error=response_data.get('message', t('flash_purge_unknown_error'))), 'danger')
                 
         except requests.exceptions.RequestException as e:
-            flash(f'Erreur de communication avec le bot : {str(e)}', 'danger')
+            flash(t('flash_purge_comm_error', error=str(e)), 'danger')
         except ValueError as e:
-            flash(f'Erreur lors du traitement de la réponse : {str(e)}', 'danger')
+            flash(t('flash_purge_response_error', error=str(e)), 'danger')
         
     except Exception as e:
-        flash(f'Erreur : {str(e)}', 'danger')
+        flash(t('flash_generic_error', error=str(e)), 'danger')
     
     return redirect(url_for('index'))
 
@@ -163,20 +215,15 @@ def save_config_route():
         
         # Validation de base
         if not config['token']:
-            flash('Le token Discord est requis', 'danger')
+            flash(t('flash_token_required'), 'danger')
             return redirect(url_for('index'))
 
         if invalid_lines:
-            flash(
-                "Ligne(s) invalide(s) dans les IDs de canaux (avant le premier "
-                f"« {CHANNEL_COMMENT_DELIMITER} », il doit y avoir uniquement des chiffres) : "
-                + ", ".join(invalid_lines),
-                'danger'
-            )
+            flash(t('flash_invalid_channel_lines', lines=", ".join(invalid_lines)), 'danger')
             return redirect(url_for('index'))
 
         if not config['channel_ids']:
-            flash('Au moins un ID de canal est requis', 'danger')
+            flash(t('flash_channel_required'), 'danger')
             return redirect(url_for('index'))
         
         # Ajouter la configuration de planification
@@ -188,10 +235,10 @@ def save_config_route():
             return redirect(url_for('index'))
         
         save_config(config)
-        flash('Configuration sauvegardée avec succès', 'success')
+        flash(t('flash_save_success'), 'success')
         
     except Exception as e:
-        flash(f'Erreur lors de la sauvegarde : {str(e)}', 'danger')
+        flash(t('flash_save_error', error=str(e)), 'danger')
     
     return redirect(url_for('index'))
 

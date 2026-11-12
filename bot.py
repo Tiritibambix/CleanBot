@@ -29,25 +29,22 @@ async def purge_channels(token, channel_ids, max_messages=999):
                 if channel:
                     try:
                         deleted = await channel.purge(limit=max_messages)
-                        msg = f"{len(deleted)} messages supprimés dans le canal {channel_id}"
-                        logger.info(msg)
+                        logger.info(f"{len(deleted)} messages supprimés dans le canal {channel_id}")
                         results.append({"channel": channel_id, "status": "success", "deleted": len(deleted)})
                     except discord.errors.Forbidden:
-                        msg = f"Accès refusé pour le canal {channel_id}"
-                        logger.error(msg)
-                        results.append({"channel": channel_id, "status": "error", "message": msg})
+                        logger.error(f"Accès refusé pour le canal {channel_id}")
+                        # "reason" est un code stable (pas une phrase) : c'est web/app.py qui le
+                        # traduit dans la langue choisie par l'utilisateur, voir translations.py
+                        results.append({"channel": channel_id, "status": "error", "reason": "forbidden"})
                     except discord.errors.HTTPException as e:
-                        msg = f"Erreur HTTP pour le canal {channel_id}: {e}"
-                        logger.error(msg)
-                        results.append({"channel": channel_id, "status": "error", "message": msg})
+                        logger.error(f"Erreur HTTP pour le canal {channel_id}: {e}")
+                        results.append({"channel": channel_id, "status": "error", "reason": "http_error", "detail": str(e)})
                 else:
-                    msg = f"Canal {channel_id} introuvable"
-                    logger.error(msg)
-                    results.append({"channel": channel_id, "status": "error", "message": msg})
+                    logger.error(f"Canal {channel_id} introuvable")
+                    results.append({"channel": channel_id, "status": "error", "reason": "not_found"})
             except ValueError:
-                msg = f"ID de canal invalide : {channel_id}"
-                logger.error(msg)
-                results.append({"channel": channel_id, "status": "error", "message": msg})
+                logger.error(f"ID de canal invalide : {channel_id}")
+                results.append({"channel": channel_id, "status": "error", "reason": "invalid_id"})
         
         # Fermer le bot après la purge
         await bot.close()
@@ -56,7 +53,7 @@ async def purge_channels(token, channel_ids, max_messages=999):
         await bot.start(token)
     except Exception as e:
         logger.error(f"Erreur lors de la connexion du bot : {e}")
-        results.append({"status": "error", "message": str(e)})
+        results.append({"status": "error", "reason": "auth", "detail": str(e)})
     
     return results
 

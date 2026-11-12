@@ -11,6 +11,40 @@ app.secret_key = os.urandom(24)
 
 CONFIG_PATH = Path("/app/config/config.yaml")
 BOT_API_URL = "http://bot:8081/purge"  # URL du service bot
+CHANNEL_COMMENT_DELIMITER = '#'  # tout ce qui suit ce caractère sur une ligne est une description, pas l'ID
+
+def parse_channel_lines(raw_text):
+    """Transforme le contenu du textarea 'channels' en liste d'IDs.
+
+    Chaque ligne peut être :
+      - vide                                      -> ignorée
+      - un commentaire pur : "# Annonces"         -> ignorée (pas d'ID)
+      - un ID seul : "123456789012345678"         -> ID ajouté
+      - un ID + description : "123456789012345678 # Général"
+                                                    -> seul l'ID est gardé, la description
+                                                       sert uniquement d'aide-mémoire visuel
+    Retourne (channel_ids, erreurs) où erreurs liste les lignes dont la partie
+    avant le délimiteur n'est pas un entier valide.
+    """
+    channel_ids = []
+    errors = []
+
+    for line in raw_text.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+
+        id_part = line.split(CHANNEL_COMMENT_DELIMITER, 1)[0].strip()
+        if not id_part:
+            # Ligne entièrement commentée (ex: "# --- Canaux publics ---"), on l'ignore
+            continue
+
+        try:
+            channel_ids.append(int(id_part))
+        except ValueError:
+            errors.append(line)
+
+    return channel_ids, errors
 
 def is_valid_cron(expression):
     pattern = r'^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|(\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9]))) (\*|([0-9]|1[0-9]|2[0-3])|(\*\/([0-9]|1[0-9]|2[0-3]))) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|(\*\/([1-9]|1[0-9]|2[0-9]|3[0-1]))) (\*|([1-9]|1[0-2])|(\*\/([1-9]|1[0-2]))) (\*|([0-6])|(\*\/([0-6])))$'
@@ -21,6 +55,7 @@ def load_config():
         return {
             'token': '',
             'channel_ids': [],
+            'channels_raw': '',
             'max_messages': 100,
             'schedule_type': 'interval',
             'interval': 'daily',
@@ -36,6 +71,10 @@ def load_config():
         if 'schedule' in config:
             config['schedule_type'] = 'interval'
             config['interval'] = config.pop('schedule')
+        # Anciennes configs : pas de texte brut sauvegardé (donc pas de descriptions),
+        # on reconstitue l'affichage à partir des IDs seuls
+        if 'channels_raw' not in config:
+            config['channels_raw'] = '\n'.join(str(c) for c in config.get('channel_ids', []))
         return config
 
 def save_config(config):
@@ -112,13 +151,13 @@ def purge_now():
 def save_config_route():
     try:
         # Configuration de base
+        channels_raw = request.form.get('channels', '')
+        channel_ids, invalid_lines = parse_channel_lines(channels_raw)
+
         config = {
             'token': request.form.get('token', '').strip(),
-            'channel_ids': [
-                int(channel.strip())
-                for channel in request.form.get('channels', '').split('\n')
-                if channel.strip()
-            ],
+            'channel_ids': channel_ids,
+            'channels_raw': channels_raw,
             'max_messages': int(request.form.get('max_messages', 100))
         }
         
@@ -126,7 +165,16 @@ def save_config_route():
         if not config['token']:
             flash('Le token Discord est requis', 'danger')
             return redirect(url_for('index'))
-        
+
+        if invalid_lines:
+            flash(
+                "Ligne(s) invalide(s) dans les IDs de canaux (avant le premier "
+                f"« {CHANNEL_COMMENT_DELIMITER} », il doit y avoir uniquement des chiffres) : "
+                + ", ".join(invalid_lines),
+                'danger'
+            )
+            return redirect(url_for('index'))
+
         if not config['channel_ids']:
             flash('Au moins un ID de canal est requis', 'danger')
             return redirect(url_for('index'))

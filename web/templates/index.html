@@ -32,8 +32,13 @@
                             
                             <div class="mb-3">
                                 <label for="channels" class="form-label">IDs des canaux (un par ligne)</label>
-                                <textarea class="form-control" id="channels" name="channels" rows="3" spellcheck="false">{{ config.get('channel_ids', [])|join('\n') }}</textarea>
-                                <div class="form-text">Entrez un ID de canal Discord par ligne</div>
+                                <textarea class="form-control" id="channels" name="channels" rows="3" spellcheck="false">{{ config.get('channels_raw', config.get('channel_ids', [])|join('\n')) }}</textarea>
+                                <div class="form-text">
+                                    Entrez un ID de canal Discord par ligne. Ajoutez une description après
+                                    <code>#</code> pour vous souvenir de quel canal il s'agit (elle est
+                                    ignorée lors de la purge), par ex. :<br>
+                                    <code>123456789012345678 # Annonces générales</code>
+                                </div>
                             </div>
                             
                             <div class="mb-3">
